@@ -215,9 +215,9 @@ class CellIntersects():
 	left_col = min([index[1] for index in intersected_inds])
 	right_col = max([index[1] for index in intersected_inds])
 
-	for i in range(left_col, right_col + 1):
+	#for i in range(left_col, right_col + 1):
 
-	    indices = intersected_inds[]
+	 #   indices = intersected_inds[]
 	
 
 	return np.asarray(intersected_inds), np.asarray(safe_inds)
