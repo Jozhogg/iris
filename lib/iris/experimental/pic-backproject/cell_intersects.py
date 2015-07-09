@@ -61,8 +61,6 @@ class CellIntersects():
 		elif angle < cur_angle:
 		    cur_index = index
 		    cur_angle = angle
-
-	    print (cur_angle-last_angle)%math.pi
 	    
 	    if( (cur_angle-last_angle)%math.pi < 0):
 		
@@ -95,7 +93,7 @@ class CellIntersects():
 	
 	return np.asarray((col,row)).T	
 
-    def get_grads(self,square):
+    def get_grads(self, square):
 	
 	results = []
 
@@ -124,8 +122,6 @@ class CellIntersects():
 
 	    low_lim = min(start_column, end_column)
 	    up_lim = max(start_column, end_column) 
-
-	    print low_lim, up_lim
 	    
 	    #Starting cell
 	    if start_column < end_column:
@@ -135,6 +131,12 @@ class CellIntersects():
 		lower = min(exit,start_y)
 		intersections.append((end_x -0.1, lower))
 		intersections.append((end_x -0.1, upper))
+	    elif start_column == end_column:
+		start_x = self.grid[0][0,start_column]
+		upper = max(end_y,start_y)
+		lower = min(end_y,start_y)
+		intersections.append((start_x +0.1, lower))
+		intersections.append((start_x +0.1, upper))
 	    else:
 		start_x = self.grid[0][0,start_column]
 		exit = start_x*line[0] + line[1]
@@ -151,7 +153,7 @@ class CellIntersects():
 		lower = min(exit,end_y)
 		intersections.append((end_x -0.1, lower))
 		intersections.append((end_x -0.1, upper))
-	    else:
+	    elif start_column != end_column:
 		start_x = self.grid[0][0,end_column]
 		exit = start_x*line[0] + line[1]
 		upper = max(exit,end_y)
@@ -169,8 +171,7 @@ class CellIntersects():
 		upper = end_x*line[0] + line[1]
 		lower = start_x*line[0] + line[1]
 
-		# NOTE:added 0.1 to move into cell, won't work in general!
-		# Can be removed once find cell supports proper boundary handling
+		# NOTE:added 0.1 to move into cell, won't work in general! 
 
 		intersections.append((start_x + 0.1, lower))
 		intersections.append((end_x - 0.1, upper))
@@ -206,7 +207,11 @@ class CellIntersects():
 	    intersected_inds.append(start_ind)
 	    intersected_inds.append(end_ind)
 
-	    for j in range(start_ind[0], end_ind[0]):
+	    intersected_inds.append(start_ind)
+	    intersected_inds.append(end_ind)
+	    start = min(start_ind[0], end_ind[0])
+	    end = max(start_ind[0], end_ind[0])
+	    for j in range(start, end):
 		intersected_inds.append((j,start_ind[1]))
 	
 	intersected_inds = np.array(intersected_inds)
@@ -215,9 +220,22 @@ class CellIntersects():
 	left_col = min([index[1] for index in intersected_inds])
 	right_col = max([index[1] for index in intersected_inds])
 
-	#for i in range(left_col, right_col + 1):
+	for i in range(left_col, right_col + 1):
 
-	 #   indices = intersected_inds[]
+	    indices, = np.where(intersected_inds[:,1] == i)
+	    
+	    lowest_row = min(intersected_inds[indices,0])
+	    highest_row = max(intersected_inds[indices,0])
+
+	    for j in range(lowest_row, highest_row):
+		if not j in intersected_inds[indices,0]:
+		    
+		    print intersected_inds[indices,0]
+		    print j,i
+
+		    safe_inds.append((j,i))
+
+	print safe_inds
 	
 
 	return np.asarray(intersected_inds), np.asarray(safe_inds)
