@@ -7,7 +7,7 @@ GRID_SIZE = 300
 
 class CellIntersects():
 
-    def __init__(grid):
+    def __init__(self, grid):
 
 	self.grid = grid
 	self.g_size = len(grid[0])
@@ -24,7 +24,7 @@ class CellIntersects():
 	self.tree = spatial.KDTree(zip(cellx.ravel(), celly.ravel()))
  
 
-    def gen_square():
+    def gen_random_square(self):
       
 	# Returns a random convex square in the grid of size (g_size,g_size)
 	# with points in ordering of the convex hull (Assumes grid is square 
@@ -78,22 +78,24 @@ class CellIntersects():
 	    pts = np.array(pts)
 	    return pts
 	else:
-	    return gen_square(g_size)
+	    return self.gen_random_square()
 
-    def find_cell(pts,grid):
+    def find_cell(self,pts):
 	
 	#Finds and returns the cell index of the cell that contains the point
 	#
 	# NOTE: Does not correctly handle points on boundary
 	
 	index = np.asarray(self.tree.query(pts)[1])
+
+	row_stride = self.grid[0].shape[1] -1
 	
-	row = (index - index%cellx.shape[1])/cellx.shape[1]
-	col = index%cellx.shape[1]
+	row = (index - index%row_stride)/row_stride
+	col = index%row_stride
 	
 	return np.asarray((col,row)).T	
 
-    def get_grads(square):
+    def get_grads(self,square):
 	
 	results = []
 
@@ -105,7 +107,7 @@ class CellIntersects():
 
 	return np.asarray(results)
 
-    def get_col_intersections(grads, inds):
+    def get_col_intersections(self, grads, inds, square):
 
 	# Returns a list of positions of entry and exit points for lines of the square through each column
 	# in order lower, upper
@@ -173,18 +175,20 @@ class CellIntersects():
 		intersections.append((start_x + 0.1, lower))
 		intersections.append((end_x - 0.1, upper))
 
-    def intersected_and_safe_inds(square):
+	return intersections
+
+    def intersected_and_safe_inds(self, square):
 	
-	grads = get_grads(square)
+	grads = self.get_grads(square)
 
 	#find the cells containing the corners of the square
-	inds = find_cell(square, grid)
+	inds = self.find_cell(square)
 	
 	#get exit and entry points for each column
-	intersections = get_column_intersections(grads, inds)
+	intersections = self.get_col_intersections(grads, inds, square)
 	
 	#find the exit and entry points in index space
-	bounding_inds = find_cell(np.asarray(intersections), self.grid)
+	bounding_inds = self.find_cell(intersections)
 
 	intersected_inds = []
 	safe_inds = []
@@ -204,8 +208,16 @@ class CellIntersects():
 
 	    for j in range(start_ind[0], end_ind[0]):
 		intersected_inds.append((j,start_ind[1]))
+	
+	intersected_inds = np.array(intersected_inds)
 
 	#populate a list of indices of all cells fully contained between the lines
+	left_col = min([index[1] for index in intersected_inds])
+	right_col = max([index[1] for index in intersected_inds])
+
+	for i in range(left_col, right_col + 1):
+
+	    indices = intersected_inds[]
 	
 
 	return np.asarray(intersected_inds), np.asarray(safe_inds)
