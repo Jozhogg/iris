@@ -1,3 +1,6 @@
+import iris
+import numpy as np
+
 def cube_grid(cube):
     #creates and returns a numpy meshgrid of lats and longs from cube
     #guess bounds if necessary
