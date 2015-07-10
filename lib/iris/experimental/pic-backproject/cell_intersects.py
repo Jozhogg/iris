@@ -166,8 +166,6 @@ class CellIntersects():
 		start_x = self.grid[0][0,index]
 		end_x = self.grid[0][0,index+1]
 		
-		print start_x, end_x
-		
 		upper = end_x*line[0] + line[1]
 		lower = start_x*line[0] + line[1]
 
@@ -229,13 +227,8 @@ class CellIntersects():
 
 	    for j in range(lowest_row, highest_row):
 		if not j in intersected_inds[indices,0]:
-		    
-		    print intersected_inds[indices,0]
-		    print j,i
 
 		    safe_inds.append((j,i))
-
-	print safe_inds
 	
 
 	return np.asarray(intersected_inds), np.asarray(safe_inds)
