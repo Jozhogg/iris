@@ -276,3 +276,28 @@ class Regridder():
                 return True
             else:
                 return False
+                
+    def get_cells_in_square(square):
+        
+        grid = cube_grid(cube)
+
+        Cell = CellIntersects(grid)
+
+        square = Cell.gen_random_square()
+
+        check_cells, safe_cells = Cell.intersected_and_safe_inds(square)
+
+        lat_points = cube.coord('latitude').points
+        long_points = cube.coord('longitude').points
+        
+        cells_in_square = safe_cells.tolist()
+        
+        for index in check_cells:
+            point = lat_points[index[1]],long_points[index[0]]
+
+            if is_in_square(square,point):
+                cells_in_square.append(index)
+                
+        return cells_in_square
+
+
