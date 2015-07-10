@@ -199,8 +199,8 @@ class CellIntersects():
 	    end_ind = bounding_inds[2*i+1]
 
 	    if(start_ind[1] != end_ind[1]):
-		print("COLUMNS MISMATCH:\n")
-		print start_ind, end_ind
+		    print("COLUMNS MISMATCH:\n")
+		    print start_ind, end_ind
 	    
 	    intersected_inds.append(start_ind)
 	    intersected_inds.append(end_ind)
