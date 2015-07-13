@@ -22,12 +22,12 @@ class Regridder():
         long_end = np.asarray(cube.coord(axis = 'x').bounds[-1,1]).reshape(1,1)
         long_bounds = np.concatenate((long_nums,long_end)).reshape(1+long_size)
         # Convert lat bounds to a 1D array
-        lat_size = cube.coord(axis = 'y').bounds.shape[0]  
+        lat_size = cube.coord(axis = 'y').bounds.shape[0]
         lat_nums = cube.coord(axis = 'y').bounds[:,0].reshape(lat_size,1)
         lat_end = np.asarray(cube.coord(axis = 'y').bounds[-1,1]).reshape(1,1)
         lat_bounds = np.concatenate((lat_nums,lat_end)).reshape(1+lat_size)
         
-        return np.meshgrid(lat_bounds,long_bounds), cube.coord(axis = 'x').points, cube.coord(axis ='y').points
+        return np.meshgrid(long_bounds,lat_bounds), cube.coord(axis = 'x').points, cube.coord(axis ='y').points
 
     def __init__(self, src_cube, tgt_cube):
     
@@ -53,7 +53,7 @@ class Regridder():
 
     def find_cell(self,pts):
     
-        #Finds and returns the cell index of the cell that contains the point
+        # Finds and returns the cell index of the cell that contains the point
         #
         # NOTE: Does not correctly handle points on boundary
     
