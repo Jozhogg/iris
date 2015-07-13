@@ -37,16 +37,18 @@ class Regridder():
         # Get the source cube's cell grid
         self.src_grid, self.x_points, self. y_points = self.cube_grid(src_cube)
         
+        self.tgt_grid = self.cube_grid(tgt_cube)[0]
+        
         # calculate x and y midpoints of source cell grid
-        cellx = celly = np.zeros((self.src_grid[0].shape[0]-1, 
+        cellx = np.zeros((self.src_grid[0].shape[0]-1, 
+                                    self.src_grid[0].shape[1]-1))
+        celly = np.zeros((self.src_grid[0].shape[0]-1, 
                                     self.src_grid[0].shape[1]-1))
 
         for i in range(self.src_grid[0].shape[1]-1):
             cellx[:,i] = float(self.src_grid[0][0,i] + self.src_grid[0][0,i+1])/2
         for i in range(self.src_grid[0].shape[0]-1):
             celly[i,:] = float(self.src_grid[1][i,0] + self.src_grid[1][i+1,0])/2
-    
-        celly = celly.T
         
         #Create KDTree of centre points of cells
         self.tree = spatial.KDTree(zip(cellx.ravel(), celly.ravel()))
@@ -64,19 +66,22 @@ class Regridder():
         row = (index - index%row_stride)/row_stride
         col = index%row_stride
     
-        return np.asarray((col,row)).T    
+        return np.asarray((row,col)).T
 
     def get_grads(self, square):
     
         # Return a list of (gradient, y intercept) tuples for each edge of
-        # the given square.
+        # the given square. Returns (None, None) for vertical line
     
         results = []
 
         for i in range(4):
             
-            gradient = (square[i,1]-square[(i+1)%4,1])/(square[i,0]-square[(i+1)%4,0])
-            intercept = square[i,1] - gradient*square[i,0]
+            if square[i,0]-square[(i+1)%4,0] != 0:
+                gradient = (square[i,1]-square[(i+1)%4,1])/(square[i,0]-square[(i+1)%4,0])
+                intercept = square[i,1] - gradient*square[i,0]
+            else:
+                gradient = intercept = None
             results.append((gradient,intercept))
 
         return np.asarray(results)
@@ -128,8 +133,8 @@ class Regridder():
                 intersections.append((midpoint, upper))
 
             #Ending cell
-            start_x = self.src_grid[0][0,end_column]
-            end_x = self.src_grid[0][0,end_column+1]
+            start_x = self.src_grid[0][0, end_column]
+            end_x = self.src_grid[0][0, end_column+1]
             
             midpoint = (start_x + end_x)/2
             
@@ -169,10 +174,11 @@ class Regridder():
 
         #find the cells containing the corners of the square
         inds = self.find_cell(square)
-    
+
         #get exit and entry points for each column
         intersections = self.get_col_intersections(grads, inds, square)
-    
+        print intersections
+
         #find the exit and entry points in index space
         bounding_inds = self.find_cell(intersections)
 
@@ -197,9 +203,13 @@ class Regridder():
             
             for j in range(start, end):
                 intersected_inds.append((j,start_ind[1]))
-    
+        
+        if len(intersected_inds) == 0: 
+        
+            return None    
+            
         intersected_inds = np.array(intersected_inds)
-
+        
         #populate a list of indices of all cells fully contained between the lines
         left_col = min([index[1] for index in intersected_inds])
         right_col = max([index[1] for index in intersected_inds])
@@ -207,54 +217,55 @@ class Regridder():
         for i in range(left_col, right_col + 1):
 
             indices, = np.where(intersected_inds[:,1] == i)
-            
-            lowest_row = min(intersected_inds[indices,0])
-            highest_row = max(intersected_inds[indices,0])
+            if len(intersected_inds[indices,0]) > 0:
+                lowest_row = min(intersected_inds[indices,0])
+                highest_row = max(intersected_inds[indices,0])
 
-            for j in range(lowest_row, highest_row):
-                if not j in intersected_inds[indices,0]:
-                    safe_inds.append((j,i))
+                for j in range(lowest_row, highest_row):
+                    if not j in intersected_inds[indices,0]:
+                        safe_inds.append((j,i))
     
         return np.asarray(intersected_inds), np.asarray(safe_inds)
     
-    def is_in_square(square,point):
-        grads = Cell.get_grads(square)
+    def is_in_square(self,square,point):
+        grads = self.get_grads(square)
         position = []    
         #vertical
         for i, line in enumerate(grads):
-            print i
+
             start_x = min(square[i][0],square[i+1][0])
             end_x = max(square[i][0],square[i+1][0])
-            print start_x, end_x
             if start_x < point[0] < end_x:
                 y = point[0]*line[0] + line[1]
                 if point[1] > y: 
                     position.append(True)
                 if point[1] < y:
-                    position.append(False)
-        print position                
+                    position.append(False)               
         if len(position) != 2:
-            print 'position is wrong size!!!  ' + str(len(position))
+            pass
+            #print 'position is wrong size!!!  ' + str(len(position))
         else:
             if not position[0] == position[1]:
                 return True
             else:
                 return False
                 
-    def get_points_in_square(square):
+    def get_points_in_square(self, square):
     
         #returns the indices of points in the given square
 
         check_cells, safe_cells = self.intersected_and_safe_inds(square)
+        
+        print check_cells
         
         cells_in_square = safe_cells.tolist()
         
         for index in check_cells:
             point = self.x_points[index[1]], self.y_points[index[0]]
 
-            if is_in_square(square,point):
+            if self.is_in_square(square,point):
                 cells_in_square.append(index)
                 
-        return cells_in_square
+        return np.array(cells_in_square)
 
 
