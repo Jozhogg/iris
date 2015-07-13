@@ -4,80 +4,52 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import iris.plot as iplot
 import iris.quickplot as qplot
-from cell_intersects import CellIntersects
-from cube_grid import cube_grid
 from scipy import spatial
 
 class Regridder():
 
-    def __init__(self, grid):
+    def cube_grid(self, cube):
+        # Creates and returns a numpy meshgrid of lats and longs from cube
+        
+        # Guess bounds if necessary
+        if cube.coord(axis ='y').bounds == None:
+            cube.coord(axis = 'y').guess_bounds()
+        if cube.coord(axis = 'x').bounds == None:
+            cube.coord(axis = 'x').guess_bounds()
+        # Convert long bounds to a 1D array
+        long_size = cube.coord(axis = 'x').bounds.shape[0]  
+        long_nums = cube.coord(axis = 'x').bounds[:,0].reshape(long_size,1)
+        long_end = np.asarray(cube.coord(axis = 'x').bounds[-1,1]).reshape(1,1)
+        long_bounds = np.concatenate((long_nums,long_end)).reshape(1+long_size)
+        # Convert lat bounds to a 1D array
+        lat_size = cube.coord(axis = 'y').bounds.shape[0]  
+        lat_nums = cube.coord(axis = 'y').bounds[:,0].reshape(lat_size,1)
+        lat_end = np.asarray(cube.coord(axis = 'y').bounds[-1,1]).reshape(1,1)
+        lat_bounds = np.concatenate((lat_nums,lat_end)).reshape(1+lat_size)
+        
+        return np.meshgrid(lat_bounds,long_bounds), cube.coord(axis = 'x').points, cube.coord(axis ='y').points
 
-        self.grid = grid
-        self.g_size = len(grid[0])
+    def __init__(self, src_cube, tgt_cube):
+    
+        # Instantiate a regridder for the given source and target cubes
+        
+        
+        # Get the source cube's cell grid
+        self.src_grid, self.x_points, self. y_points = self.cube_grid(src_cube)
+        
+        # calculate x and y midpoints of source cell grid
+        cellx = celly = np.zeros((self.src_grid[0].shape[0]-1, 
+                                    self.src_grid[0].shape[1]-1))
 
-        cellx = celly = np.zeros((grid[0].shape[0]-1, grid[0].shape[1]-1))
-
-        for i in range(grid[0].shape[1]-1):
-            cellx[:,i] = float(grid[0][0,i] + grid[0][0,i+1])/2
-        for i in range(grid[0].shape[0]-1):
-            celly[i,:] = float(grid[1][i,0] + grid[1][i+1,0])/2
+        for i in range(self.src_grid[0].shape[1]-1):
+            cellx[:,i] = float(self.src_grid[0][0,i] + self.src_grid[0][0,i+1])/2
+        for i in range(self.src_grid[0].shape[0]-1):
+            celly[i,:] = float(self.src_grid[1][i,0] + self.src_grid[1][i+1,0])/2
     
         celly = celly.T
-            
-        self.tree = spatial.KDTree(zip(cellx.ravel(), celly.ravel()))
-     
-
-    def gen_random_square(self):
-          
-        # Returns a random convex square in the grid of size (g_size,g_size)
-        # with points in ordering of the convex hull (Assumes grid is square 
-        # of size g_size
-
-        square = np.random.random((4,2))*(self.g_size - 1)
-
-        #find left most point
-        x_ord_ind = np.argsort(square[:,0])
-
-        inds = [0,1,2,3]
-        pts = []
-
-        pts.append(square[x_ord_ind[0], :])
-
-        last_angle = -math.pi
-        convex = True
-
-        while len(inds) > 0:
-                
-            if not x_ord_ind[0] in inds:
-                convex = False
-                break
-
-            cur_angle = math.pi
-            cur_index = -1
-            for index in inds:
-            
-                opp = -pts[-1][1] + square[index,1]
-                adj = -pts[-1][0] + square[index,0]
-                angle = math.atan2(opp,adj)
-                if math.isnan(angle):
-                    pass
-                elif angle < cur_angle:
-                    cur_index = index
-                    cur_angle = angle
-                
-                if( (cur_angle-last_angle)%math.pi < 0):
-                    convex = False
-            
-            pts.append(square[cur_index,:])
-            inds.remove(cur_index)
-            last_angle = cur_angle
         
-        if convex:
-
-            pts = np.array(pts)
-            return pts
-        else:
-            return self.gen_random_square()
+        #Create KDTree of centre points of cells
+        self.tree = spatial.KDTree(zip(cellx.ravel(), celly.ravel()))
 
     def find_cell(self,pts):
     
@@ -87,7 +59,7 @@ class Regridder():
     
         index = np.asarray(self.tree.query(pts)[1])
 
-        row_stride = self.grid[0].shape[1] -1
+        row_stride = self.src_grid[0].shape[1] -1
     
         row = (index - index%row_stride)/row_stride
         col = index%row_stride
@@ -95,6 +67,9 @@ class Regridder():
         return np.asarray((col,row)).T    
 
     def get_grads(self, square):
+    
+        # Return a list of (gradient, y intercept) tuples for each edge of
+        # the given square.
     
         results = []
 
@@ -125,55 +100,66 @@ class Regridder():
             up_lim = max(start_column, end_column) 
             
             #Starting cell
+            
+            start_x = self.src_grid[0][0,start_column]
+            end_x = self.src_grid[0][0,start_column+1]
+            
+            midpoint = (start_x + end_x)/2
+            
             if start_column < end_column:
-                end_x = self.grid[0][0,start_column+1]
+            
                 exit = end_x*line[0] + line[1]
                 upper = max(exit,start_y)
                 lower = min(exit,start_y)
-                intersections.append((end_x -0.1, lower))
-                intersections.append((end_x -0.1, upper))
+                intersections.append((midpoint, lower))
+                intersections.append((midpoint, upper))
             elif start_column == end_column:
-                start_x = self.grid[0][0,start_column]
+                
                 upper = max(end_y,start_y)
                 lower = min(end_y,start_y)
-                intersections.append((start_x +0.1, lower))
-                intersections.append((start_x +0.1, upper))
+                intersections.append((midpoint, lower))
+                intersections.append((midpoint, upper))
             else:
-                start_x = self.grid[0][0,start_column]
+                
                 exit = start_x*line[0] + line[1]
                 upper = max(exit,start_y)
                 lower = min(exit,start_y)
-                intersections.append((start_x +0.1, lower))
-                intersections.append((start_x +0.1, upper))
+                intersections.append((midpoint, lower))
+                intersections.append((midpoint, upper))
 
             #Ending cell
+            start_x = self.src_grid[0][0,end_column]
+            end_x = self.src_grid[0][0,end_column+1]
+            
+            midpoint = (start_x + end_x)/2
+            
             if start_column > end_column:
-                end_x = self.grid[0][0,end_column+1]
+                
                 exit = end_x*line[0] + line[1]
                 upper = max(exit,end_y)
                 lower = min(exit,end_y)
-                intersections.append((end_x -0.1, lower))
-                intersections.append((end_x -0.1, upper))
+                intersections.append((midpoint, lower))
+                intersections.append((midpoint, upper))
             elif start_column != end_column:
-                start_x = self.grid[0][0,end_column]
+                
                 exit = start_x*line[0] + line[1]
                 upper = max(exit,end_y)
                 lower = min(exit,end_y)
-                intersections.append((start_x +0.1, lower))
-                intersections.append((start_x +0.1, upper))
+                intersections.append((midpoint, lower))
+                intersections.append((midpoint, upper))
             #Intermediate cells
             for index in range(low_lim+1, up_lim):
         
-                start_x = self.grid[0][0,index]
-                end_x = self.grid[0][0,index+1]
+                start_x = self.src_grid[0][0,index]
+                end_x = self.src_grid[0][0,index+1]
+                
+                midpoint = (start_x + end_x)/2
             
                 upper = end_x*line[0] + line[1]
                 lower = start_x*line[0] + line[1]
 
-                # NOTE:added 0.1 to move into cell, won't work in general! 
-
-                intersections.append((start_x + 0.1, lower))
-                intersections.append((end_x - 0.1, upper))
+                intersections.append((midpoint, lower))
+                intersections.append((midpoint, upper))
 
         return intersections
 
@@ -206,8 +192,6 @@ class Regridder():
             intersected_inds.append(start_ind)
             intersected_inds.append(end_ind)
 
-            intersected_inds.append(start_ind)
-            intersected_inds.append(end_ind)
             start = min(start_ind[0], end_ind[0])
             end = max(start_ind[0], end_ind[0])
             
@@ -233,26 +217,6 @@ class Regridder():
     
         return np.asarray(intersected_inds), np.asarray(safe_inds)
     
-    def cube_grid(cube):
-        #creates and returns a numpy meshgrid of lats and longs from cube
-        #guess bounds if necessary
-        if cube.coord('latitude').bounds == None:
-            cube.coord('latitude').guess_bounds()
-        if cube.coord('longitude').bounds == None:
-            cube.coord('longitude').guess_bounds()
-        #convert long bounds to a 1D array
-        long_size = cube.coord('longitude').bounds.shape[0]  
-        long_nums = cube.coord('longitude').bounds[:,0].reshape(long_size,1)
-        long_end = np.asarray(cube.coord('longitude').bounds[-1,1]).reshape(1,1)
-        long_bounds = np.concatenate((long_nums,long_end)).reshape(1+long_size)
-        #convert lat bounds to a 1D array
-        lat_size = cube.coord('latitude').bounds.shape[0]  
-        lat_nums = cube.coord('latitude').bounds[:,0].reshape(lat_size,1)
-        lat_end = np.asarray(cube.coord('latitude').bounds[-1,1]).reshape(1,1)
-        lat_bounds = np.concatenate((lat_nums,lat_end)).reshape(1+lat_size)
-        
-        return np.meshgrid(lat_bounds,long_bounds)
-    
     def is_in_square(square,point):
         grads = Cell.get_grads(square)
         position = []    
@@ -277,23 +241,16 @@ class Regridder():
             else:
                 return False
                 
-    def get_cells_in_square(square):
-        
-        grid = cube_grid(cube)
+    def get_points_in_square(square):
+    
+        #returns the indices of points in the given square
 
-        Cell = CellIntersects(grid)
-
-        square = Cell.gen_random_square()
-
-        check_cells, safe_cells = Cell.intersected_and_safe_inds(square)
-
-        lat_points = cube.coord('latitude').points
-        long_points = cube.coord('longitude').points
+        check_cells, safe_cells = self.intersected_and_safe_inds(square)
         
         cells_in_square = safe_cells.tolist()
         
         for index in check_cells:
-            point = lat_points[index[1]],long_points[index[0]]
+            point = self.x_points[index[1]], self.y_points[index[0]]
 
             if is_in_square(square,point):
                 cells_in_square.append(index)
