@@ -177,7 +177,6 @@ class Regridder():
 
         #get exit and entry points for each column
         intersections = self.get_col_intersections(grads, inds, square)
-        print intersections
 
         #find the exit and entry points in index space
         bounding_inds = self.find_cell(intersections)
@@ -256,8 +255,6 @@ class Regridder():
 
         check_cells, safe_cells = self.intersected_and_safe_inds(square)
         
-        print check_cells
-        
         cells_in_square = safe_cells.tolist()
         
         for index in check_cells:
@@ -268,4 +265,5 @@ class Regridder():
                 
         return np.array(cells_in_square)
 
+    
 
