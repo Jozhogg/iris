@@ -33,7 +33,6 @@ class Regridder():
     
         # Instantiate a regridder for the given source and target cubes
         
-        
         # Get the source cube's cell grid
         self.src_grid, self.x_points, self. y_points = self.cube_grid(src_cube)
         
@@ -65,7 +64,7 @@ class Regridder():
     
         row = (index - index%row_stride)/row_stride
         col = index%row_stride
-    
+        
         return np.asarray((row,col)).T
 
     def get_grads(self, square):
@@ -93,7 +92,9 @@ class Regridder():
 
         #list of upper and lower exit points from each column at (x_value_at_start_of_column, y_intercept)
         intersections = []
-    
+        
+        # Populates the list by finding the 
+        
         for i, line in enumerate(grads):
 
             start_column = inds[i][1]
@@ -104,7 +105,7 @@ class Regridder():
             low_lim = min(start_column, end_column)
             up_lim = max(start_column, end_column) 
             
-            #Starting cell
+            #Starting column
             
             start_x = self.src_grid[0][0,start_column]
             end_x = self.src_grid[0][0,start_column+1]
@@ -132,7 +133,7 @@ class Regridder():
                 intersections.append((midpoint, lower))
                 intersections.append((midpoint, upper))
 
-            #Ending cell
+            #Ending column
             start_x = self.src_grid[0][0, end_column]
             end_x = self.src_grid[0][0, end_column+1]
             
@@ -152,7 +153,7 @@ class Regridder():
                 lower = min(exit,end_y)
                 intersections.append((midpoint, lower))
                 intersections.append((midpoint, upper))
-            #Intermediate cells
+            #Intermediate columns
             for index in range(low_lim+1, up_lim):
         
                 start_x = self.src_grid[0][0,index]
@@ -200,6 +201,8 @@ class Regridder():
             start = min(start_ind[0], end_ind[0])
             end = max(start_ind[0], end_ind[0])
             
+            # Add all source cells between start and end on this column
+            # i.e. all source cells intersected by the line in this column
             for j in range(start, end):
                 intersected_inds.append((j,start_ind[1]))
         
@@ -209,7 +212,11 @@ class Regridder():
             
         intersected_inds = np.array(intersected_inds)
         
-        #populate a list of indices of all cells fully contained between the lines
+        # populate a list of indices of all cells fully contained between the lines
+        # by adding cells in each column where
+        # (1) the cell is between the lowest and highest intersected row in this column
+        # (2) the cell has not been intersected
+        
         left_col = min([index[1] for index in intersected_inds])
         right_col = max([index[1] for index in intersected_inds])
 
@@ -223,10 +230,13 @@ class Regridder():
                 for j in range(lowest_row, highest_row):
                     if not j in intersected_inds[indices,0]:
                         safe_inds.append((j,i))
-    
+        
         return np.asarray(intersected_inds), np.asarray(safe_inds)
     
     def is_in_square(self,square,point):
+    
+        # Note: Points on boundary evaluate to False
+    
         grads = self.get_grads(square)
         position = []    
         #vertical
@@ -241,8 +251,8 @@ class Regridder():
                 if point[1] < y:
                     position.append(False)               
         if len(position) != 2:
-            pass
-            #print 'position is wrong size!!!  ' + str(len(position))
+            #Only occurs if point was on boundary of square
+            return False
         else:
             if not position[0] == position[1]:
                 return True
@@ -255,7 +265,6 @@ class Regridder():
 
         check_cells, safe_cells = self.intersected_and_safe_inds(square)
        
-        
         cells_in_square = safe_cells.tolist()
         
         for index in check_cells:

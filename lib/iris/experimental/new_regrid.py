@@ -833,8 +833,17 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
 
     # Get the source cube x and y 2D auxiliary coordinates.
     sx, sy = src_cube.coord(axis='x'), src_cube.coord(axis='y')
+    
+    if not sx.has_bounds():
+        sx.guess_bounds()
+        sy.guess_bounds()
+    
     # Get the target grid cube x and y dimension coordinates.
     tx, ty = get_xy_dim_coords(grid_cube)
+    
+    if not tx.has_bounds():
+        tx.guess_bounds()
+        ty.guess_bounds()
 
     """if sx.units.modulus is None or sy.units.modulus is None or \
             sx.units != sy.units:
@@ -903,7 +912,8 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
 
     # Match the source cube x coordinate range to the target grid
     # cube x coordinate range.
-    #min_sx, min_tx = np.min(sx.points), np.min(tx.points)
+    
+    #min_sx, min_tx = np.min(sx.bounds), np.min(tx.bounds)
     #modulus = sx.units.modulus
     #if min_sx < 0 and min_tx >= 0:
     #    indices = np.where(sx_points < 0)
@@ -922,23 +932,39 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
     ty_cells = np.concatenate((ty.bounds[:, 0],
                                ty.bounds[-1, 1].reshape(1)))
 
-    # Determine the target grid cube x and y cells that bound
-    # the source cube x and y points.
+    # Find which target cell each source point is contained in
 
     def _regrid_indices(t_grid):
+    
+        # Returns a tuple of the row and column position of each source data
+        # point in the sparse matrix as well as the corresponding ordered data
         
+        # to be populated list of back projected target cells as squares
         squares = []
         
+        # row stride length along src_cube data
         row_stride = src_cube.data.shape[1]
         
+        # back projected target grid points
         n_grid = src_proj.transform_points(tgt_proj, t_grid[0], t_grid[1])
+        
+        inds0 = []
+        inds1 = []
+        inds2 = []
+        inds3 = []
+        inds4 = []
+        inds5 = []
         
         row = []
         col = []
         data = np.zeros(src_cube.data.size)
         count = 0
         
+        lst = []
+        
         gridder = Regridder(src_cube, grid_cube)
+        
+        # Populate list of back projected squares corresponding to each cell
         
         for i in range(n_grid.shape[0]-1):
             for j in range(n_grid.shape[1]-1):
@@ -949,22 +975,33 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
                 square.append((n_grid[i+1,j,0], n_grid[i+1,j,1]))
                 square.append((n_grid[i+1,j+1,0], n_grid[i+1,j+1,1]))
                 square.append((n_grid[i,j+1,0], n_grid[i,j+1,1]))
-                square.append((n_grid[i,j,0], n_grid[i,j,1]))        
+                square.append((n_grid[i,j,0], n_grid[i,j,1]))
                 
-                squares.append(np.array(square))
+                square = np.array(square)
+                
+                #sometimes needed!                
+                square = square + [360,0]      
+                
+                squares.append(square)
         
         for i ,square in enumerate(squares):
         
-            plt.plot(square[:,0], square[:,1])
+            plt.plot(square[:,0], square[:,1], transform=src_cube.coord_system().as_cartopy_crs())
             
+            # Get list of indices of each source point contained in the square
             indices = gridder.get_points_in_square(square)
             
+            # Add each source point to the row, col, data for the sparse matrix
             for index in indices:
-                
-                row.append(i)
-                col.append(index[0]*row_stride + index[1])
-                data[count] = weights[index[0], index[1]]
-                count += 1
+
+                if count < src_cube.data.size:
+                    row.append(i)
+                    col.append(index[0]*row_stride + index[1])
+                    data[count] = weights[index[0], index[1]]
+                    count += 1
+                else:
+                    count += 1
+                    #print(count)
         
         return row, col, data
 
@@ -979,32 +1016,6 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
     # space, and N is the flattened source space. The sparse matrix will then
     # be populated with those source cube points that contribute to a specific
     # target cube cell.
-
-    """# Determine the valid indices and their offsets in M x N space.
-    if ma.isMaskedArray(src_cube.data):
-        # Calculate the valid M offsets, accounting for the source cube mask.
-        mask = ~src_cube.data.mask.flatten()
-        cols = np.where((y_indices >= 0) & (y_indices < ty_depth) &
-                        (x_indices >= 0) & (x_indices < tx_depth) &
-                        mask)[0]
-    else:
-        # Calculate the valid M offsets.
-        cols = np.where((y_indices >= 0) & (y_indices < ty_depth) &
-                        (x_indices >= 0) & (x_indices < tx_depth))[0]
-
-    # Reduce the indices to only those that are valid.
-    x_indices = x_indices[cols]
-    y_indices = y_indices[cols]
-
-    # Calculate the valid N offsets.
-    if ty_dim < tx_dim:
-        rows = y_indices * tx.points.size + x_indices
-    else:
-        rows = x_indices * ty.points.size + y_indices"""
-
-    # Calculate the associated valid weights.
-    #weights_flat = weights.flatten()
-    #data = weights_flat[cols]
 
     # Build our sparse M x N matrix of weights.
     sparse_matrix = csc_matrix((data, (rows, cols)),
