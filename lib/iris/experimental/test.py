@@ -1,18 +1,21 @@
 import numpy as np
 import iris
-import iris.plot as iplt
-import iris.quickplot as qplt
+#import iris.plot as iplt
+#import iris.quickplot as qplt
 import cartopy.crs as ccrs
 from scipy import spatial
-import matplotlib.pyplot as plt
+
+#import matplotlib.pyplot as plt
+
 from new_regrid import PointInCell
 from regridder import Regridder
 
 np.set_printoptions(threshold = np.nan)
 
+
 #src = iris.load_cube("/project/atk/_tmp_data_store/avd_sprint/ite_veg_fraction/ukv_grid/35_35_source.nc")
 #tgt = iris.load_cube("/project/atk/_tmp_data_store/avd_sprint/ite_veg_fraction/ukv_grid/35_35_target.nc")
-
+'''
 sample_dir = "/project/avd/iris/resources/git/iris-sample-data/sample_data/"
 
 iris.config.SAMPLE_DATA_DIR = sample_dir
@@ -33,6 +36,23 @@ iplt.contourf(src)
 
 rg_src = src.regrid(tgt, PointInCell(np.ones(src.data.size).reshape(src.data.shape)))
 
+'''
+numb = '35'
+src = iris.load_cube("/project/atk/_tmp_data_store/avd_sprint/ite_veg_fraction/ukv_grid/"+numb+"_"+numb+"_source.nc")
+tgt = iris.load_cube("/project/atk/_tmp_data_store/avd_sprint/ite_veg_fraction/ukv_grid/"+numb+"_"+numb+"_target.nc") 
+
+print src.coords(axis='x')
+arr = np.arange(src.data.size).reshape((src.data.shape))
+src.data = arr
+
+print src.data.shape
+print src.data.size
+
+#iplt.contourf(src, 10)
+
+rg_src = src.regrid(tgt, PointInCell(np.ones(src.data.size).reshape((src.data.shape))))
+
+
 #lin_rg = src.regrid(tgt, iris.analysis.Linear(extrapolation_mode = "mask"))
 
 
@@ -41,8 +61,8 @@ print rg_src.data
 #print lin_rg
 #print lin_rg.data
 
-ax = plt.gca()
-ax.coastlines()
+#ax = plt.gca()
+#ax.coastlines()
 
-plt.show()
+#plt.show()
 

@@ -1,9 +1,9 @@
 import iris
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
-import iris.plot as iplot
-import iris.quickplot as qplot
+#import iris.plot as iplot
+#import iris.quickplot as qplot
 from scipy import spatial
 
 class Regridder():
@@ -50,7 +50,7 @@ class Regridder():
             celly[i,:] = float(self.src_grid[1][i,0] + self.src_grid[1][i+1,0])/2
         
         #Create KDTree of centre points of cells
-        self.tree = spatial.KDTree(zip(cellx.ravel(), celly.ravel()))
+        self.tree = spatial.cKDTree(zip(cellx.ravel(), celly.ravel()))
 
     def find_cell(self,pts):
     
