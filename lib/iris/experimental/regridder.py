@@ -259,9 +259,11 @@ class Regridder():
         
         #vertical
         for i, line in enumerate(grads):
-
-            start_x = min(square[i,0],square[i+1,0])
-            end_x = max(square[i,0],square[i+1,0])
+            
+            squareis = square[i,0], square[i+1,0]
+            
+            start_x = min(squareis)
+            end_x = max(squareis)
             if start_x < point[0] < end_x:
                 y = point0*line[0] + line[1]
                 if point1 > y: 
@@ -276,6 +278,8 @@ class Regridder():
                 return True
             else:
                 return False
+    
+    
                 
     def get_points_in_square(self, square):
     
@@ -287,11 +291,18 @@ class Regridder():
        
         cells_in_square = safe_cells.tolist()
         
+        point = np.empty(0)
+        
         for index in check_cells:
-            point = self.x_points[index[1]], self.y_points[index[0]]
-
-            if self.is_in_square(square,point,grads):
-                cells_in_square.append(index)
+            point = np.append(point,[self.x_points[index[1]].ravel(), self.y_points[index[0]].ravel()])
+            
+        x_indices = np.searchsorted(check_cells[0], point[0], side='right') - 1
+        y_indices = np.searchsorted(check_cells[1], point[1], side='right') - 1
+        
+#           if self.is_in_square(square,point,grads):
+        cells_in_square.append(index)
+                
+            
                 
                 
         return np.array(cells_in_square)

@@ -951,7 +951,9 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
         col = np.empty(0, dtype = np.int32)
         lists = []
         
+
         data = np.empty(0)
+
         count = 0
         
         lst = []
