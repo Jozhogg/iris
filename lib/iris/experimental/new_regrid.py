@@ -927,12 +927,10 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
     tx_dim, = grid_cube.coord_dims(tx)
     ty_dim, = grid_cube.coord_dims(ty)
 
-    tx_cells = np.concatenate((tx.bounds[:, 0],
-                               tx.bounds[-1, 1].reshape(1)))
-    ty_cells = np.concatenate((ty.bounds[:, 0],
-                               ty.bounds[-1, 1].reshape(1)))
 
     # Find which target cell each source point is contained in
+
+    gridder = Regridder(src_cube, grid_cube)
 
     def _regrid_indices(t_grid):
     
@@ -957,8 +955,6 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
         count = 0
         
         lst = []
-        
-        gridder = Regridder(src_cube, grid_cube)
         
         # Populate list of back projected squares corresponding to each cell
         
@@ -1030,7 +1026,7 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
     #x_indices = _regrid_indices(tx_cells, tx_depth, sx_points)
     #y_indices = _regrid_indices(ty_cells, ty_depth, sy_points)
     
-    rows, cols, data = _regrid_indices(np.meshgrid(tx_cells,ty_cells))
+    rows, cols, data = _regrid_indices(gridder.tgt_grid)
     
     
     rows = rows[:src_cube.data.size]
