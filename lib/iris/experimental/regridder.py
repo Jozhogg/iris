@@ -233,28 +233,31 @@ class Regridder():
         
         return np.asarray(intersected_inds), np.asarray(safe_inds)
     
-    def is_in_square(self,square,point):
+    def is_in_square(self,square,point,grads):
     
         # Note: Points on boundary evaluate to False
     
-        grads = self.get_grads(square)
+        
         position = []    
+        point0 = point[0]
+        point1 = point[1]
+        
         #vertical
         for i, line in enumerate(grads):
 
-            start_x = min(square[i][0],square[i+1][0])
-            end_x = max(square[i][0],square[i+1][0])
+            start_x = min(square[i,0],square[i+1,0])
+            end_x = max(square[i,0],square[i+1,0])
             if start_x < point[0] < end_x:
-                y = point[0]*line[0] + line[1]
-                if point[1] > y: 
+                y = point0*line[0] + line[1]
+                if point1 > y: 
                     position.append(True)
-                if point[1] < y:
+                if point1 < y:
                     position.append(False)               
         if len(position) != 2:
             #Only occurs if point was on boundary of square
             return False
         else:
-            if not position[0] == position[1]:
+            if position[0] != position[1]:
                 return True
             else:
                 return False
@@ -262,7 +265,9 @@ class Regridder():
     def get_points_in_square(self, square):
     
         #returns the indices of points in the given square
-
+        
+        grads = self.get_grads(square)
+        
         check_cells, safe_cells = self.intersected_and_safe_inds(square)
        
         cells_in_square = safe_cells.tolist()
@@ -270,7 +275,7 @@ class Regridder():
         for index in check_cells:
             point = self.x_points[index[1]], self.y_points[index[0]]
 
-            if self.is_in_square(square,point):
+            if self.is_in_square(square,point,grads):
                 cells_in_square.append(index)
                 
         return np.array(cells_in_square)
