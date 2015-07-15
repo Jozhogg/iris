@@ -948,13 +948,6 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
         # back projected target grid points
         n_grid = src_proj.transform_points(tgt_proj, t_grid[0], t_grid[1])
         
-        inds0 = []
-        inds1 = []
-        inds2 = []
-        inds3 = []
-        inds4 = []
-        inds5 = []
-        
         row = []
         col = []
         lists = []
@@ -971,15 +964,18 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
         for i in range(n_grid.shape[0]-1):
             for j in range(n_grid.shape[1]-1):
             
-                square = []
+                square = np.empty((5,2))
             
-                square.append((n_grid[i,j,0], n_grid[i,j,1]))
-                square.append((n_grid[i+1,j,0], n_grid[i+1,j,1]))
-                square.append((n_grid[i+1,j+1,0], n_grid[i+1,j+1,1]))
-                square.append((n_grid[i,j+1,0], n_grid[i,j+1,1]))
-                square.append((n_grid[i,j,0], n_grid[i,j,1]))
-                
-                square = np.array(square)
+                square[0, 0] = n_grid[i,j,0]
+                square[0, 1] = n_grid[i,j,1]
+                square[1, 0] = n_grid[i+1,j,0]
+                square[1, 1] = n_grid[i+1,j,1]
+                square[2, 0] = n_grid[i+1,j+1,0]
+                square[2, 1] = n_grid[i+1,j+1,1]
+                square[3, 0] = n_grid[i,j+1,0]
+                square[3, 1] = n_grid[i,j+1,1]
+                square[4, 0] = n_grid[i,j,0]
+                square[4, 1] = n_grid[i,j,1]
                 
                 #sometimes needed!                
                 square = square + [360,0]      

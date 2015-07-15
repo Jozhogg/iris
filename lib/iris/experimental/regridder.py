@@ -72,7 +72,7 @@ class Regridder():
         # Return a list of (gradient, y intercept) tuples for each edge of
         # the given square. Returns (None, None) for vertical line
     
-        results = []
+        results = np.empty((4,2))
 
         for i in range(4):
             
@@ -81,9 +81,10 @@ class Regridder():
                 intercept = square[i,1] - gradient*square[i,0]
             else:
                 gradient = intercept = None
-            results.append((gradient,intercept))
+            results[i,0] = gradient
+            results[i,1] = intercept
 
-        return np.asarray(results)
+        return results
 
     def get_col_intersections(self, grads, inds, square):
 
@@ -190,10 +191,6 @@ class Regridder():
             
             start_ind = bounding_inds[2*i]
             end_ind = bounding_inds[2*i+1]
-
-            if(start_ind[1] != end_ind[1]):
-                print("COLUMNS MISMATCH:\n")
-                print start_ind, end_ind
             
             intersected_inds.append(start_ind)
             intersected_inds.append(end_ind)
@@ -217,21 +214,24 @@ class Regridder():
         # (1) the cell is between the lowest and highest intersected row in this column
         # (2) the cell has not been intersected
         
-        left_col = min([index[1] for index in intersected_inds])
-        right_col = max([index[1] for index in intersected_inds])
+        cols = [index[1] for index in intersected_inds]
+        
+        left_col = min(cols)
+        right_col = max(cols)
 
         for i in range(left_col, right_col + 1):
 
             indices, = np.where(intersected_inds[:,1] == i)
-            if len(intersected_inds[indices,0]) > 0:
-                lowest_row = min(intersected_inds[indices,0])
-                highest_row = max(intersected_inds[indices,0])
+            rows = intersected_inds[indices,0]
+            if len(rows) > 0:
+                lowest_row = min(rows)
+                highest_row = max(rows)
 
                 for j in range(lowest_row, highest_row):
-                    if not j in intersected_inds[indices,0]:
+                    if not j in rows:
                         safe_inds.append((j,i))
         
-        return np.asarray(intersected_inds), np.asarray(safe_inds)
+        return intersected_inds, np.array(safe_inds)
     
     def is_in_square(self,square,point):
     
