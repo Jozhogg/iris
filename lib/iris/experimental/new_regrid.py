@@ -948,11 +948,12 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
         # back projected target grid points
         n_grid = src_proj.transform_points(tgt_proj, t_grid[0], t_grid[1])
         
-        row = []
-        col = []
+        row = np.empty(0, dtype = np.int32)
+
+        col = np.empty(0, dtype = np.int32)
         lists = []
         
-        data = np.zeros(src_cube.data.size)
+        data = np.empty(0)
         count = 0
         
         lst = []
@@ -986,7 +987,6 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
         
 
             #plt.plot(square[:,0], square[:,1])
-
             
             # Get list of indices of each source point contained in the square
             indices = gridder.get_points_in_square(square)
@@ -1002,15 +1002,28 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
                      #   lists.append(index)
                       #  print('added index ')
                        # print(count)
-                if count < data.size:
-                    row.append(i)
-                    col.append(index[0]*row_stride + index[1])
-                    data[count] = weights[index[0], index[1]]
-                else:
-                    print(count)
-                
+                #if count < d_size:
+                #    row.append(i)
+                #    col.append(index[0]*row_stride + index[1])
+                #    data[count] = weights[index[0], index[1]]
+                #else:
+                    #print(count)
                 
                 count += 1
+            if len(indices) > 0:    
+                indices = np.array(indices)
+                
+                    
+                n_rows = np.empty(indices.shape[0], dtype = np.int32)
+                n_rows[:] = i
+                    
+                row = np.append(row, n_rows)
+                    
+                n_cols = indices[:,0]*row_stride + indices[:,1]
+                    
+                col = np.append(col, n_cols)
+                    
+                data = np.append(data, weights[indices[:,0], indices[:,1]])
 
         return row, col, data
 
@@ -1019,7 +1032,10 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
     
     rows, cols, data = _regrid_indices(np.meshgrid(tx_cells,ty_cells))
     
-    data = data[:len(rows)]
+    
+    rows = rows[:src_cube.data.size]
+    cols = cols[:src_cube.data.size]
+    data = data[:src_cube.data.size]
 
     # Now construct a sparse M x N matix, where M is the flattened target
     # space, and N is the flattened source space. The sparse matrix will then

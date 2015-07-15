@@ -184,7 +184,7 @@ class Regridder():
         bounding_inds = self.find_cell(intersections)
 
         intersected_inds = []
-        safe_inds = []
+        safe_inds = np.empty((0,2), dtype=np.int32)
 
         #populate a list of indices of all cells intersected by lines
         for i in range(int(len(bounding_inds)/2)):
@@ -223,15 +223,30 @@ class Regridder():
 
             indices, = np.where(intersected_inds[:,1] == i)
             rows = intersected_inds[indices,0]
-            if len(rows) > 0:
+            """if len(rows) == 4:
+
                 lowest_row = min(rows)
                 highest_row = max(rows)
 
                 for j in range(lowest_row, highest_row):
                     if not j in rows:
-                        safe_inds.append((j,i))
+                        safe_inds.append((j,i))"""
+                        
+            if len(rows) == 4:
+                lowest_row = min(rows)
+                highest_row = max(rows)
+                    
+                arr = np.arange(lowest_row + 1, highest_row, dtype = np.int32)
+                arr1 = np.empty((arr.size, 2), dtype = np.int32)
+                
+                arr1[:,0] = arr
+                arr1[:,1] = i
+                
+                safe_inds = np.append(safe_inds, arr1)
+                safe_inds = safe_inds.reshape(safe_inds.size/2,2)
+                
         
-        return intersected_inds, np.array(safe_inds)
+        return intersected_inds, safe_inds
     
     def is_in_square(self,square,point,grads):
     
@@ -277,6 +292,7 @@ class Regridder():
 
             if self.is_in_square(square,point,grads):
                 cells_in_square.append(index)
+                
                 
         return np.array(cells_in_square)
 

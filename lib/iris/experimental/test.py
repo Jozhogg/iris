@@ -41,12 +41,12 @@ numb = '35'
 src = iris.load_cube("/project/atk/_tmp_data_store/avd_sprint/ite_veg_fraction/ukv_grid/"+numb+"_"+numb+"_source.nc")
 tgt = iris.load_cube("/project/atk/_tmp_data_store/avd_sprint/ite_veg_fraction/ukv_grid/"+numb+"_"+numb+"_target.nc") 
 
-print src.coords(axis='x')
+#print src.coords(axis='x')
 arr = np.arange(src.data.size).reshape((src.data.shape))
 src.data = arr
 
-print src.data.shape
-print src.data.size
+#print src.data.shape
+#print src.data.size
 
 #iplt.contourf(src, 10)
 
