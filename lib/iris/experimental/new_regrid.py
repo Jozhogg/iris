@@ -38,7 +38,7 @@ import iris.cube
 import iris.unit
 import cartopy.crs as ccrs
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 from regridder import Regridder
 
@@ -957,6 +957,8 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
         
         row = []
         col = []
+        lists = []
+        
         data = np.zeros(src_cube.data.size)
         count = 0
         
@@ -986,7 +988,9 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
         
         for i ,square in enumerate(squares):
         
-            plt.plot(square[:,0], square[:,1], transform=src_cube.coord_system().as_cartopy_crs())
+
+            #plt.plot(square[:,0], square[:,1])
+
             
             # Get list of indices of each source point contained in the square
             indices = gridder.get_points_in_square(square)
@@ -994,15 +998,24 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
             # Add each source point to the row, col, data for the sparse matrix
             for index in indices:
 
-                if count < src_cube.data.size:
+                #if count < 5000:
+                 #   if np.any([(index == x).all() for x in lists]):
+                  #      plt.plot(gridder.x_points[index[1]],gridder.y_points[index[0]],'ro', markersize = 10)
+                   #     print('plotted!')
+                    #else:
+                     #   lists.append(index)
+                      #  print('added index ')
+                       # print(count)
+                if count < data.size:
                     row.append(i)
                     col.append(index[0]*row_stride + index[1])
                     data[count] = weights[index[0], index[1]]
-                    count += 1
                 else:
-                    count += 1
-                    #print(count)
-        
+                    print(count)
+                
+                
+                count += 1
+
         return row, col, data
 
     #x_indices = _regrid_indices(tx_cells, tx_depth, sx_points)
