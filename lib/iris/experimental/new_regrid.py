@@ -981,18 +981,19 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
                 
                 squares.append(square)
         
-        check_cells_list = [0]
-        point = np.empty(0)
+        check_cells_list = np.empty((0,2),dtype = np.int32)
+        point = np.empty((0,2))
         
         for i ,square in enumerate(squares):
         
-
-            #plt.plot(square[:,0], square[:,1])
+            #if i in [0,2]:
+             #   plt.plot(square[:,0], square[:,1])
             
             # Get list of indices of each source point contained in the square
-            indices = gridder.get_points_in_square(square)[0]
+            indices, checkcells = gridder.get_points_in_square(square)
             #populate list of cells to check
-            check_cells_list.append(gridder.get_points_in_square(square)[1])
+            check_cells_list = np.append(check_cells_list,checkcells)
+            check_cells_list = check_cells_list.reshape((check_cells_list.size/2,2))
             # Add each source point to the row, col, data for the sparse matrix
             #for index in indices:
 
@@ -1013,18 +1014,14 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
                 
              #   count += 1
              
-            for check_cells in check_cells_list:
-            
-                for index in check_cells:
-            
-                    point = np.append(point,[self.x_points[index[1]], self.y_points[index[0]]])
-                    
-                    
-                
             
             
+            temp_point = np.asarray((gridder.x_points[checkcells[:,1]], gridder.y_points[checkcells[:,0]]))
+            temp_point = temp_point.T
+            #print(temp_point.shape)
+            point = np.append(point,temp_point)
+            point = point.reshape(point.size/2,2)
             
-             
             if len(indices) > 0:    
                 indices = np.array(indices)
                 
@@ -1039,7 +1036,71 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
                 col = np.append(col, n_cols)
                     
                 data = np.append(data, weights[indices[:,0], indices[:,1]])
-
+                
+        #print(point.shape)
+        
+        #print(
+        #print()
+        
+        b = np.ascontiguousarray(check_cells_list).view(np.dtype((np.void, check_cells_list.dtype.itemsize * check_cells_list.shape[1])))
+        _, idx = np.unique(b, return_index=True)
+        
+        check_cells_list = check_cells_list[idx]
+        point = point[idx]
+            
+        trans_points = tgt_proj.transform_points(src_proj, point[:,0], point[:,1])
+        #plt.plot(point[:,0],point[:,1],'ro')
+        #print(t_grid[0][0])
+        #print(t_grid[1][:,0])
+        #print(trans_points[:,0].shape)
+        
+        x_indices = np.searchsorted(t_grid[0][0], trans_points[:,0], side='right') - 1
+        y_indices = np.searchsorted(t_grid[1][:,0], trans_points[:,1], side='right') - 1
+        
+        
+        #print(t_grid[1][:,0].size)
+        
+       
+        row_stride_tgt = grid_cube.shape[1]
+        
+        x_indices = x_indices.reshape(x_indices.size)
+        y_indices = y_indices.reshape(y_indices.size)
+        
+        print(x_indices.shape)
+        print(y_indices.shape)
+        valid = np.where((x_indices >= 0) & (x_indices < row_stride_tgt) & (y_indices >= 0) & (y_indices < t_grid[1][:,0].size - 1))
+        
+        flat_inds = y_indices[valid]*row_stride_tgt + x_indices[valid]
+        flat_src = check_cells_list[valid,0]*row_stride + check_cells_list[valid,1]
+        new_data = weights[check_cells_list[valid,0],check_cells_list[valid,1]]
+        
+        row = np.append(row,flat_inds)
+        col = np.append(col,flat_src)
+                
+        data = np.append(data,new_data)
+        #for i, src_index in enumerate(check_cells_list):
+        #
+         #   x_ind = x_indices[i]
+          #  y_ind = y_indices[i]
+           # 
+            #if x_ind >= 0 and x_ind < row_stride_tgt and y_ind >= 0 and y_ind < t_grid[1][:,0].size - 1:
+            #
+             #   flat_ind = y_ind*row_stride_tgt + x_ind
+            #
+            #
+            #
+            #
+            #
+             #   row = np.append(row,flat_ind)
+              #  
+               # flat_src = src_index[0]*row_stride + src_index[1]
+                #print(flat_src)
+                #col = np.append(col,flat_src)
+                #
+                #data = np.append(data,weights[src_index[0],src_index[1]])
+            
+          
+            
         return row, col, data
 
     #x_indices = _regrid_indices(tx_cells, tx_depth, sx_points)
@@ -1048,9 +1109,9 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
     rows, cols, data = _regrid_indices(gridder.tgt_grid)
     
     
-    rows = rows[:src_cube.data.size]
-    cols = cols[:src_cube.data.size]
-    data = data[:src_cube.data.size]
+    #rows = rows[:src_cube.data.size]
+    #cols = cols[:src_cube.data.size]
+    #data = data[:src_cube.data.size]
 
     # Now construct a sparse M x N matix, where M is the flattened target
     # space, and N is the flattened source space. The sparse matrix will then
