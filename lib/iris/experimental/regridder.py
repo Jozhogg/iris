@@ -200,7 +200,9 @@ class Regridder():
             
             # Add all source cells between start and end on this column
             # i.e. all source cells intersected by the line in this column
+            #Could be quicker?? Vectorise?
             for j in range(start, end):
+                
                 intersected_inds.append((j,start_ind[1]))
         
         if len(intersected_inds) == 0: 

@@ -988,7 +988,7 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
             indices = gridder.get_points_in_square(square)
             
             # Add each source point to the row, col, data for the sparse matrix
-            for index in indices:
+            #for index in indices:
 
                 #if count < 5000:
                  #   if np.any([(index == x).all() for x in lists]):
@@ -1005,7 +1005,7 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
                 #else:
                     #print(count)
                 
-                count += 1
+                #count += 1
             if len(indices) > 0:    
                 indices = np.array(indices)
                 
@@ -1015,7 +1015,8 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
                     
                 row = np.append(row, n_rows)
                     
-                n_cols = indices[:,0]*row_stride + indices[:,1]
+                n_cols = indices[:,0]*row_stride
+                n_cols += indices[:,1]
                     
                 col = np.append(col, n_cols)
                     
