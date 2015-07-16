@@ -975,7 +975,7 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
                 square[4, 1] = n_grid[i,j,1]
                 
                 #sometimes needed!                
-                square = square + [360,0]      
+                #square = square + [360,0]      
                 
                 squares.append(square)
         
