@@ -289,7 +289,6 @@ class Regridder():
         
         check_cells, safe_cells = self.intersected_and_safe_inds(square)
        
-        cells_in_square = safe_cells.tolist()
         
         point = np.empty(0)
         
@@ -305,6 +304,6 @@ class Regridder():
             
                 
                 
-        return np.array(cells_in_square)
+        return (safe_cells,check_cells)
 
 
