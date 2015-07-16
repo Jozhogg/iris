@@ -37,7 +37,7 @@ class Regridder():
         self.src_grid, self.x_points, self. y_points = self.cube_grid(src_cube)
         
         self.tgt_grid = self.cube_grid(tgt_cube)[0]
-        
+        print(self.tgt_grid)
         # calculate x and y midpoints of source cell grid
         cellx = np.zeros((self.src_grid[0].shape[0]-1, 
                                     self.src_grid[0].shape[1]-1))
@@ -152,6 +152,9 @@ class Regridder():
                 exit = start_x*line[0] + line[1]
                 upper = max(exit,end_y)
                 lower = min(exit,end_y)
+                
+                
+                
                 intersections.append((midpoint, lower))
                 intersections.append((midpoint, upper))
             #Intermediate columns
@@ -289,22 +292,7 @@ class Regridder():
         
         grads = self.get_grads(square)
         
-        check_cells, safe_cells = self.intersected_and_safe_inds(square)
-       
-        
-        point = np.empty(0)
-        
-        for index in check_cells:
-            point = np.append(point,[self.x_points[index[1]].ravel(), self.y_points[index[0]].ravel()])
-            
-        x_indices = np.searchsorted(check_cells[0], point[0], side='right') - 1
-        y_indices = np.searchsorted(check_cells[1], point[1], side='right') - 1
-        
-#           if self.is_in_square(square,point,grads):
-        cells_in_square.append(index)
-                
-            
-                
+        check_cells, safe_cells = self.intersected_and_safe_inds(square) 
                 
         return (safe_cells,check_cells)
 
