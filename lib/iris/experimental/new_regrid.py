@@ -951,7 +951,9 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
         col = np.empty(0, dtype = np.int32)
         lists = []
         
+
         data = np.empty(0)
+
         count = 0
         
         lst = []
@@ -979,14 +981,18 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
                 
                 squares.append(square)
         
+        check_cells_list = [0]
+        point = np.empty(0)
+        
         for i ,square in enumerate(squares):
         
 
             #plt.plot(square[:,0], square[:,1])
             
             # Get list of indices of each source point contained in the square
-            indices = gridder.get_points_in_square(square)
-            
+            indices = gridder.get_points_in_square(square)[0]
+            #populate list of cells to check
+            check_cells_list.append(gridder.get_points_in_square(square)[1])
             # Add each source point to the row, col, data for the sparse matrix
             #for index in indices:
 
@@ -1005,7 +1011,7 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
                 #else:
                     #print(count)
                 
-                #count += 1
+
             if len(indices) > 0:    
                 indices = np.array(indices)
                 
