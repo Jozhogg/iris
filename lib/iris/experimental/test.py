@@ -2,13 +2,15 @@ import numpy as np
 import iris
 #import iris.plot as iplt
 #import iris.quickplot as qplt
-import cartopy.crs as ccrs
-from scipy import spatial
+#import cartopy.crs as ccrs
+#from scipy import spatial
 
 #import matplotlib.pyplot as plt
 
 from new_regrid import PointInCell
 from regridder import Regridder
+
+#import iris.tests.stock as stock
 
 np.set_printoptions(threshold = np.nan)
 
@@ -49,6 +51,14 @@ src.data = arr
 #print src.data.size
 
 #iplt.contourf(src, 10)
+
+"""src = stock.lat_lon_cube()
+src.coord(axis='x').guess_bounds()
+src.coord(axis='y').guess_bounds()
+
+tgt = src.copy()
+tgt.coord(axis='x').coord_system = stock.RotatedGeogCS(30, 30)
+tgt.coord(axis='y').coord_system = stock.RotatedGeogCS(30, 30)"""
 
 rg_src = src.regrid(tgt, PointInCell(np.ones(src.data.size).reshape((src.data.shape))))
 

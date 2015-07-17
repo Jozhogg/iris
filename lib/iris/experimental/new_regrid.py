@@ -990,7 +990,7 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
              #   plt.plot(square[:,0], square[:,1])
             
             # Get list of indices of each source point contained in the square
-            indices, checkcells = gridder.get_points_in_square(square)
+            indices, checkcells, l, r = gridder.get_points_in_square(square)
             #populate list of cells to check
             check_cells_list = np.append(check_cells_list,checkcells)
             check_cells_list = check_cells_list.reshape((check_cells_list.size/2,2))
@@ -1019,21 +1019,29 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
             #print(temp_point.shape)
             point = np.append(point,temp_point)
             point = point.reshape(point.size/2,2)
-            if len(indices) > 0:    
-                indices = np.array(indices)
+            
+            compressed = ma.compressed(indices.ravel())
+            
+            if len(indices) > 0:
+                #indices = np.array(indices)
+                counter = np.arange(indices.size, dtype=np.int32).reshape(indices.shape)
+                counter = ma.masked_where(ma.getmask(indices), counter)
                 
+                #print(indices.dtype)
                     
-                n_rows = np.empty(indices.shape[0], dtype = np.int32)
+                n_rows = np.empty(compressed.size, dtype = np.int32)
                 n_rows[:] = i
                     
                 row = np.append(row, n_rows)
                     
-                n_cols = indices[:,0]*row_stride
-                n_cols += indices[:,1]
+                n_cols = indices.ravel()*row_stride
+                n_cols += (indices + np.arange(l,r).reshape((r-l,1))).ravel()
                     
-                col = np.append(col, n_cols)
-                    
-                data = np.append(data, weights[indices[:,0], indices[:,1]])
+                col = np.append(col, n_cols.compressed())
+                #print(indices)
+                #print(ma.compressed(indices.ravel()))
+                #print((counter%indices.shape[0]).ravel())
+                data = np.append(data, weights[compressed, ma.compressed((counter%indices.shape[0]).ravel())])
                 
         #print(point.shape)
         
@@ -1064,8 +1072,8 @@ def regrid_weighted_curvilinear_to_rectilinear(src_cube, weights, grid_cube):
         x_indices = x_indices.reshape(x_indices.size)
         y_indices = y_indices.reshape(y_indices.size)
         
-        print(x_indices.shape)
-        print(y_indices.shape)
+        #print(x_indices.shape)
+        #print(y_indices.shape)
         valid = np.where((x_indices >= 0) & (x_indices < row_stride_tgt) & (y_indices >= 0) & (y_indices < t_grid[1][:,0].size - 1))
         
         flat_inds = y_indices[valid]*row_stride_tgt + x_indices[valid]
