@@ -584,6 +584,7 @@ class BackprojectRegridder(object):
         #list of upper and lower exit points from each column at 
         #(x_value_at_midpoint_of_column, y_intercept)
         intersections = []
+
         
         # Populates the list by finding the 
         
@@ -598,7 +599,7 @@ class BackprojectRegridder(object):
             up_lim = int(max(start_column, end_column))
             
             #Starting column
-            
+    
             start_x = self.src_grid[0][0,start_column]
             end_x = self.src_grid[0][0,start_column+1]
             
