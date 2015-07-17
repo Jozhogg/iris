@@ -39,7 +39,7 @@ iplt.contourf(src)
 rg_src = src.regrid(tgt, PointInCell(np.ones(src.data.size).reshape(src.data.shape)))
 
 '''
-numb = '15'
+numb = '10'
 src = iris.load_cube("/project/atk/_tmp_data_store/avd_sprint/ite_veg_fraction/ukv_grid/"+numb+"_"+numb+"_source.nc")
 tgt = iris.load_cube("/project/atk/_tmp_data_store/avd_sprint/ite_veg_fraction/ukv_grid/"+numb+"_"+numb+"_target.nc") 
 

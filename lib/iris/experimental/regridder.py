@@ -38,7 +38,7 @@ class Regridder():
         self.src_grid, self.x_points, self. y_points = self.cube_grid(src_cube)
         
         self.tgt_grid = self.cube_grid(tgt_cube)[0]
-        print(self.tgt_grid)
+        #print(self.tgt_grid)
         # calculate x and y midpoints of source cell grid
         cellx = np.zeros((self.src_grid[0].shape[0]-1, 
                                     self.src_grid[0].shape[1]-1))
@@ -263,6 +263,7 @@ class Regridder():
                 safe_inds.append(np.empty(0))
                 
         marr = ma.masked_all((len(safe_inds), diff), dtype = np.int32)
+        
         #print marr.shape
         #print len(safe_inds)
         for i in range(len(safe_inds)):
