@@ -5,6 +5,7 @@ import cartopy.crs as ccrs
 #import iris.plot as iplot
 #import iris.quickplot as qplot
 from scipy import spatial
+from numpy import ma
 
 class Regridder():
 
@@ -37,7 +38,7 @@ class Regridder():
         self.src_grid, self.x_points, self. y_points = self.cube_grid(src_cube)
         
         self.tgt_grid = self.cube_grid(tgt_cube)[0]
-        print(self.tgt_grid)
+        #print(self.tgt_grid)
         # calculate x and y midpoints of source cell grid
         cellx = np.zeros((self.src_grid[0].shape[0]-1, 
                                     self.src_grid[0].shape[1]-1))
@@ -187,8 +188,9 @@ class Regridder():
         bounding_inds = self.find_cell(intersections)
 
         intersected_inds = []
-        safe_inds = np.empty((0,2), dtype=np.int32)
-
+        #safe_inds = np.empty((0,2), dtype=np.int32)
+        safe_inds = []
+        
         #populate a list of indices of all cells intersected by lines
         for i in range(int(len(bounding_inds)/2)):
             
@@ -223,7 +225,8 @@ class Regridder():
         
         left_col = min(cols)
         right_col = max(cols)
-
+        diff = 0
+        
         for i in range(left_col, right_col + 1):
 
             indices, = np.where(intersected_inds[:,1] == i)
@@ -236,22 +239,40 @@ class Regridder():
                 for j in range(lowest_row, highest_row):
                     if not j in rows:
                         safe_inds.append((j,i))"""
-                        
+            
+            
+            
             if len(rows) == 4:
                 lowest_row = min(rows)
                 highest_row = max(rows)
-                    
-                arr = np.arange(lowest_row + 1, highest_row, dtype = np.int32)
-                arr1 = np.empty((arr.size, 2), dtype = np.int32)
                 
-                arr1[:,0] = arr
-                arr1[:,1] = i
+                if diff < highest_row - lowest_row - 1:
+                    diff = highest_row - lowest_row - 1
                 
-                safe_inds = np.append(safe_inds, arr1)
-                safe_inds = safe_inds.reshape(safe_inds.size/2,2)
+                #arr = np.arange(lowest_row + 1, highest_row, dtype = np.int32)
+                #arr1 = np.empty((arr.size, 2), dtype = np.int32)
                 
+                #arr1[:,0] = arr
+                #arr1[:,1] = i
+                
+                #safe_inds = np.append(safe_inds, arr1)
+                #safe_inds = safe_inds.reshape(safe_inds.size/2,2)
+                
+                safe_inds.append(np.arange(lowest_row + 1, highest_row, dtype=np.int32))
+            else:
+                safe_inds.append(np.empty(0))
+                
+        marr = ma.masked_all((len(safe_inds), diff), dtype = np.int32)
         
-        return intersected_inds, safe_inds
+        #print marr.shape
+        #print len(safe_inds)
+        for i in range(len(safe_inds)):
+            
+            marr[i,:safe_inds[i].size] = safe_inds[i]   
+            
+        safe_inds = marr
+        
+        return intersected_inds, safe_inds, left_col, right_col + 1
     
     def is_in_square(self,square,point,grads):
     
@@ -290,10 +311,10 @@ class Regridder():
     
         #returns the indices of points in the given square
         
-        grads = self.get_grads(square)
+        #grads = self.get_grads(square)
         
-        check_cells, safe_cells = self.intersected_and_safe_inds(square) 
+        check_cells, safe_cells, l, r = self.intersected_and_safe_inds(square) 
                 
-        return (safe_cells,check_cells)
+        return (safe_cells,check_cells, l ,r)
 
 
