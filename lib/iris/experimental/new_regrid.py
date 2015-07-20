@@ -372,21 +372,24 @@ class BackprojectRegridder(object):
                     # (the safe indices are currently listed in a masked array
                     # whose rows correspond to the columns in source grid.
                     # see get_intersected_and_safe_inds)
-                    counter = np.arange(indices.size, 
-                                        dtype=np.int32).reshape(indices.shape)
-                    counter = ma.masked_where(ma.getmask(indices), counter)
+                    row_vec = np.arange(l,r, dtype = np.int32).reshape((r-l,1))
+                    
+                    counter = np.zeros(indices.shape, dtype = np.int32)
+                    counter += row_vec
+                    counter  = ma.masked_where(ma.getmask(indices), counter)
+
                     compressed = ma.compressed(indices.ravel())
                     
                     #This is the ith target cell in flat index space
                     row[count:count+compressed.size] = i
                     
                     # Calculate the flat source index from the row and
-                    # deducing the column of the masked array as explained in
+                    # deducing the column from the masked array as explained in
                     # get_intersected_and_safe_inds
                     
                     n_cols = indices.ravel()*row_stride
-                    row_vec = np.arange(l,r, dtype = np.int32).reshape((r-l,1))
-                    n_cols += (indices + row_vec).ravel()
+                    
+                    n_cols += (counter).ravel()
                     
                     col[count:count+compressed.size] = n_cols.compressed()
                     
@@ -394,7 +397,7 @@ class BackprojectRegridder(object):
                     # using the masked counter to align with the rows of the 
                     # masked indices array and provide the column index
                     
-                    data[count:count+compressed.size] = weights[compressed, ma.compressed((counter%indices.shape[0]).ravel())]
+                    data[count:count+compressed.size] = weights[compressed, ma.compressed(counter)]
                     count += compressed.size
             
             # Magical code to remove any duplicate source cells in our list
@@ -447,7 +450,7 @@ class BackprojectRegridder(object):
             data[count:count+length] = new_data
             
             count += length
-
+            
             return row[:count], col[:count], data[:count]
         
         # Get the indices for which source points are in which target cells
