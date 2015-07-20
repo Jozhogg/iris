@@ -736,7 +736,7 @@ class BackprojectRegridder(object):
         for i in range(left_col, right_col + 1):
             indices, = np.where(intersected_inds[:,1] == i)
             rows = intersected_inds[indices,0]
-
+            
             if len(rows) == 4:
                 lowest_row = int(min(rows))
                 highest_row = int(max(rows))
