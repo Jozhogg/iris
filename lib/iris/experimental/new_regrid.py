@@ -103,7 +103,8 @@ class BackprojectRegridder(object):
                                 + self.src_grid[1][i+1,0])/2
         
         #Create CKDTree of centre points of cells
-        self.tree = spatial.cKDTree(zip(cellx.ravel(), celly.ravel()))
+        tree_grid = zip(cellx.ravel(), celly.ravel())
+        self.tree = spatial.cKDTree(tree_grid)
     
     @staticmethod
     def cube_grid(cube):
